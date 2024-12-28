@@ -33,7 +33,7 @@ prompt APPLICATION 223760 - orgchart
 -- Application Export:
 --   Application:     223760
 --   Name:            orgchart
---   Date and Time:   14:24 Saturday December 28, 2024
+--   Date and Time:   21:13 Saturday December 28, 2024
 --   Exported By:     BALDOGI.RICHARD
 --   Flashback:       0
 --   Export Type:     Component Export
@@ -96,24 +96,129 @@ wwv_flow_imp_shared.create_plugin(
 '  )',
 'as',
 '    --region and ajax id',
-'    l_region_static_id     p_region.static_id%type    := p_region.static_id;',
-'    l_region_id            p_region.id%type           := p_region.id;',
-'    l_ajax_id              p_region.static_id%type    := apex_plugin.get_ajax_identifier;',
+'    l_region_static_id      p_region.static_id%type    := p_region.static_id;',
+'    l_region_id             p_region.id%type           := p_region.id;',
+'    l_ajax_id               p_region.static_id%type    := apex_plugin.get_ajax_identifier;',
 '',
-'    l_result               apex_plugin.t_region_render_result;',
+'    --init js',
+'    l_init_js               varchar2(32767)            := nvl(apex_plugin_util.replace_substitutions(p_region.init_javascript_code), ''undefined'');',
 '',
 '    --region source',
-'    l_context              apex_exec.t_context;',
+'    l_context               apex_exec.t_context;',
+'',
+'    --attributes',
+'    l_id_col                p_region.attribute_01%type := p_region.attribute_01;',
+'    l_parent_id_col         p_region.attribute_02%type := p_region.attribute_02;',
+'    l_node_template_cols    p_region.attribute_03%type := p_region.attribute_03;',
+'    l_node_template         p_region.attribute_04%type := p_region.attribute_04;',
+'    l_node_button_template  p_region.attribute_05%type := p_region.attribute_05;',
+'    l_partial_lode          p_region.attribute_06%type := p_region.attribute_06;',
+'',
+'    --query variables',
+'    l_id_col_pos                        pls_integer;',
+'    l_parent_id_col_pos                 pls_integer;',
+'    l_node_template_cols_pos            pls_integer;',
+'',
+'    --comments variables',
+'    l_id_col_val                        varchar2(32767);',
+'    l_parent_col_val                    varchar2(32767);',
+'    l_node_template_cols_val            varchar2(32767);',
 '',
 '    --other variables',
-'    l_plsql_func_result    varchar2(32767);',
-'    l_json_text            clob := ''{}'';',
-'    l_region_record        apex_application_page_regions%rowtype;',
-'    l_js_varname           constant varchar2(10)   := sys.dbms_random.string(''a'',10);',
+'    l_json_text             clob := ''{}'';',
+'    l_region_record         apex_application_page_regions%rowtype;',
+'    l_js_varname            constant varchar2(10)   := sys.dbms_random.string(''a'',10);',
 '',
 'begin',
 '',
-'    -- Adding librarires manually due to an references error which is caused by charset="utf-8" attribute is not set in the script tag.',
+'    --debug',
+'    if apex_application.g_debug',
+'    then',
+'        apex_plugin_util.debug_region',
+'          ( p_plugin => p_plugin',
+'          , p_region => p_region',
+'          );',
+'    end if;',
+'',
+'    --get region data',
+'    select aapr.*',
+'    into l_region_record',
+'    from apex_application_page_regions aapr',
+'    where aapr.region_id = l_region_id;',
+'',
+'    --converting region source into a JSON structure',
+'    if l_region_record.location is not null then',
+'      ',
+'        l_context := apex_exec.open_query_context(',
+'              p_location                => l_region_record.location_code',
+'            --',
+'            , p_table_owner             => l_region_record.table_owner',
+'            , p_table_name              => l_region_record.table_name',
+'            , p_where_clause            => l_region_record.where_clause',
+'            , p_order_by_clause         => l_region_record.order_by_clause',
+'            , p_include_rowid_column    => case l_region_record.include_rowid_column',
+'                                                when ''Yes'' then TRUE',
+'                                                when ''No''  then FALSE',
+'                                           end',
+'            --          ',
+'            , p_sql_query               => case when l_region_record.function_body_language is null',
+'                                                  then l_region_record.region_source',
+'                                                else null ',
+'                                           end',
+'            , p_plsql_function_body     => case when nvl(l_region_record.function_body_language,'''') = ''PLSQL''',
+'                                                  then l_region_record.region_source',
+'                                                else null ',
+'                                           end',
+'            , p_optimizer_hint          => l_region_record.optimizer_hint',
+'            --',
+'            , p_server_static_id        => l_region_record.remote_database_name',
+'            --',
+'            , p_module_static_id        => l_region_record.web_source_module_name',
+'            , p_external_filter_expr    => l_region_record.external_filter_expr',
+'            , p_external_order_by_expr  => l_region_record.external_order_by_expr',
+'            );',
+'',
+'        --Get ID and Parent ID columns position',
+'        l_id_col_pos                        := apex_exec.get_column_position(l_context, l_id_col);',
+'        l_parent_id_col_pos                 := apex_exec.get_column_position(l_context, l_parent_id_col);        ',
+'',
+'        --Loop through Node Template columns TODO!!!!!',
+'',
+'        --creating JSON for JS initialization',
+'        apex_json.initialize_clob_output;',
+'',
+'            apex_json.open_object(p_name => ''nodeData'');',
+'',
+'                apex_json.open_array;',
+'',
+'                    while apex_exec.next_row(l_context) ',
+'                    loop',
+'',
+'                        apex_json.open_object;',
+'',
+'                            --TODO: apex_exec.get_varchar2',
+'                            --apex_json.write',
+'',
+'                        apex_json.close_object;',
+'',
+'                    end loop;',
+'',
+'                l_json_text := apex_json.get_clob_output;',
+'',
+'                apex_json.close_array;',
+'',
+'            apex_json.close_object;',
+'',
+'        apex_json.free_output;',
+'',
+'    end if;',
+'',
+'    --split JSON',
+'    splitJSON(p_json     => l_json_text,',
+'              p_varname  => l_js_varname,',
+'              p_splitter => 5000);',
+'',
+'    -- Adding librarires manually due to a reference error which is caused by charset="utf-8" attribute is not set in the script tag.',
 '    -- Source: https://stackoverflow.com/questions/21381097/d3-is-not-defined-referenceerror',
 '',
 '    apex_javascript.add_library( p_name         => ''d3.v7''',
@@ -133,10 +238,11 @@ wwv_flow_imp_shared.create_plugin(
 '                               , p_attributes   => ''charset="utf-8"'');                                                              ',
 '',
 '    --Add onload code',
-'    apex_javascript.add_onload_code(p_code => ''HIERARCHYCHART.main(null,null);'');',
+'    apex_javascript.add_onload_code(p_code => ''HIERARCHYCHART.main(null,null,null);'');',
 '',
 'end render;',
 '',
+'-- AJAX function which is used to return the rest of the hierarchy for the chart',
 'function ajax',
 '    ( p_region in apex_plugin.t_region',
 '    , p_plugin in apex_plugin.t_plugin ',
@@ -156,13 +262,14 @@ wwv_flow_imp_shared.create_plugin(
 ,p_api_version=>3
 ,p_render_function=>'render'
 ,p_ajax_function=>'ajax'
+,p_standard_attributes=>'SOURCE_LOCATION:AJAX_ITEMS_TO_SUBMIT:ORDER_BY:ESCAPE_OUTPUT:INIT_JAVASCRIPT_CODE:COLUMNS:HEADING_ALIGNMENT:VALUE_ALIGNMENT:VALUE_CSS:VALUE_ATTRIBUTE'
 ,p_substitute_attributes=>true
-,p_version_scn=>15596363588021
+,p_version_scn=>15596412786257
 ,p_subscribe_plugin_settings=>true
 ,p_version_identifier=>'1.0'
 ,p_about_url=>'https://github.com/baldogiRichard/apex-hierarchy-chart'
-,p_files_version=>14
-,p_updated_on=>wwv_flow_imp.dz('20241228142355Z')
+,p_files_version=>16
+,p_updated_on=>wwv_flow_imp.dz('20241228211333Z')
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
 wwv_flow_imp_shared.create_plugin_attr_group(
@@ -182,6 +289,134 @@ wwv_flow_imp_shared.create_plugin_attr_group(
 ,p_display_sequence=>20
 ,p_created_on=>wwv_flow_imp.dz('20241228132230Z')
 ,p_updated_on=>wwv_flow_imp.dz('20241228132230Z')
+,p_created_by=>'BALDOGI.RICHARD'
+,p_updated_by=>'BALDOGI.RICHARD'
+);
+wwv_flow_imp_shared.create_plugin_attribute(
+ p_id=>wwv_flow_imp.id(102686575956812244460)
+,p_plugin_id=>wwv_flow_imp.id(205145835849788167298)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>1
+,p_display_sequence=>10
+,p_static_id=>'id_column'
+,p_prompt=>'ID Column:'
+,p_attribute_type=>'REGION SOURCE COLUMN'
+,p_is_required=>true
+,p_column_data_types=>'VARCHAR2:NUMBER:ROWID'
+,p_is_translatable=>false
+,p_attribute_group_id=>wwv_flow_imp.id(102586827655329824407)
+,p_help_text=>'The ID column of the source table which helps to identify a single record in the source.'
+,p_created_on=>wwv_flow_imp.dz('20241228192923Z')
+,p_updated_on=>wwv_flow_imp.dz('20241228192923Z')
+,p_created_by=>'BALDOGI.RICHARD'
+,p_updated_by=>'BALDOGI.RICHARD'
+);
+wwv_flow_imp_shared.create_plugin_attribute(
+ p_id=>wwv_flow_imp.id(102687184633379251198)
+,p_plugin_id=>wwv_flow_imp.id(205145835849788167298)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>2
+,p_display_sequence=>20
+,p_static_id=>'parent_id_column'
+,p_prompt=>'Parent ID Column:'
+,p_attribute_type=>'REGION SOURCE COLUMN'
+,p_is_required=>true
+,p_column_data_types=>'VARCHAR2:NUMBER:ROWID'
+,p_is_translatable=>false
+,p_attribute_group_id=>wwv_flow_imp.id(102586827655329824407)
+,p_help_text=>'The Parent ID column of the source table which helps to identify a single records parent record in the source.'
+,p_created_on=>wwv_flow_imp.dz('20241228193030Z')
+,p_updated_on=>wwv_flow_imp.dz('20241228194017Z')
+,p_created_by=>'BALDOGI.RICHARD'
+,p_updated_by=>'BALDOGI.RICHARD'
+);
+wwv_flow_imp_shared.create_plugin_attribute(
+ p_id=>wwv_flow_imp.id(102687749608280308662)
+,p_plugin_id=>wwv_flow_imp.id(205145835849788167298)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>3
+,p_display_sequence=>30
+,p_static_id=>'node_template_column'
+,p_prompt=>'Node Template Columns:'
+,p_attribute_type=>'TEXTAREA'
+,p_is_required=>false
+,p_is_translatable=>false
+,p_attribute_group_id=>wwv_flow_imp.id(102586827655329824407)
+,p_help_text=>'A comma (,) separated column list which will be used in the Node template attribute.'
+,p_created_on=>wwv_flow_imp.dz('20241228194005Z')
+,p_updated_on=>wwv_flow_imp.dz('20241228194005Z')
+,p_created_by=>'BALDOGI.RICHARD'
+,p_updated_by=>'BALDOGI.RICHARD'
+);
+wwv_flow_imp_shared.create_plugin_attribute(
+ p_id=>wwv_flow_imp.id(102694555602417604229)
+,p_plugin_id=>wwv_flow_imp.id(205145835849788167298)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>4
+,p_display_sequence=>40
+,p_static_id=>'node_template'
+,p_prompt=>'Node Template:'
+,p_attribute_type=>'HTML'
+,p_is_required=>true
+,p_is_translatable=>false
+,p_attribute_group_id=>wwv_flow_imp.id(102586827941358824408)
+,p_help_text=>'This template will be used as the Node Template.'
+,p_created_on=>wwv_flow_imp.dz('20241228202921Z')
+,p_updated_on=>wwv_flow_imp.dz('20241228202921Z')
+,p_created_by=>'BALDOGI.RICHARD'
+,p_updated_by=>'BALDOGI.RICHARD'
+);
+wwv_flow_imp_shared.create_plugin_attribute(
+ p_id=>wwv_flow_imp.id(102695049976865321890)
+,p_plugin_id=>wwv_flow_imp.id(205145835849788167298)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>5
+,p_display_sequence=>50
+,p_static_id=>'node_button_template'
+,p_prompt=>'Node Button Template:'
+,p_attribute_type=>'HTML'
+,p_is_required=>true
+,p_is_translatable=>false
+,p_attribute_group_id=>wwv_flow_imp.id(102586827941358824408)
+,p_created_on=>wwv_flow_imp.dz('20241228203305Z')
+,p_updated_on=>wwv_flow_imp.dz('20241228203305Z')
+,p_created_by=>'BALDOGI.RICHARD'
+,p_updated_by=>'BALDOGI.RICHARD'
+);
+wwv_flow_imp_shared.create_plugin_attribute(
+ p_id=>wwv_flow_imp.id(102695795891864349618)
+,p_plugin_id=>wwv_flow_imp.id(205145835849788167298)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>6
+,p_display_sequence=>60
+,p_static_id=>'partial_data_load'
+,p_prompt=>'Partial Data Load:'
+,p_attribute_type=>'CHECKBOX'
+,p_is_required=>false
+,p_default_value=>'Y'
+,p_is_translatable=>false
+,p_help_text=>'If the attribute is switched ON, then the content of the table will be loaded partially to the browser. As the user expands the leaf nodes their children will be loaded through an AJAX call.'
+,p_created_on=>wwv_flow_imp.dz('20241228203743Z')
+,p_updated_on=>wwv_flow_imp.dz('20241228203743Z')
+,p_created_by=>'BALDOGI.RICHARD'
+,p_updated_by=>'BALDOGI.RICHARD'
+);
+wwv_flow_imp_shared.create_plugin_std_attribute(
+ p_id=>wwv_flow_imp.id(102659362771552530094)
+,p_plugin_id=>wwv_flow_imp.id(205145835849788167298)
+,p_name=>'INIT_JAVASCRIPT_CODE'
+,p_is_required=>false
+,p_created_on=>wwv_flow_imp.dz('20241228171629Z')
+,p_updated_on=>wwv_flow_imp.dz('20241228171629Z')
+,p_created_by=>'BALDOGI.RICHARD'
+,p_updated_by=>'BALDOGI.RICHARD'
+);
+wwv_flow_imp_shared.create_plugin_std_attribute(
+ p_id=>wwv_flow_imp.id(102659362352782530093)
+,p_plugin_id=>wwv_flow_imp.id(205145835849788167298)
+,p_name=>'SOURCE_LOCATION'
+,p_created_on=>wwv_flow_imp.dz('20241228171629Z')
+,p_updated_on=>wwv_flow_imp.dz('20241228171629Z')
 ,p_created_by=>'BALDOGI.RICHARD'
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
@@ -3716,9 +3951,9 @@ end;
 begin
 wwv_flow_imp.g_varchar2_table := wwv_flow_imp.empty_varchar2_table;
 wwv_flow_imp.g_varchar2_table(1) := '2F2A20676C6F62616C7320617065782C24202A2F0D0A77696E646F772E4849455241524348594348415254203D2077696E646F772E4849455241524348594348415254207C7C207B7D3B0D0A0D0A2F2F45786563757465207363726970740D0A48494552';
-wwv_flow_imp.g_varchar2_table(2) := '415243485943484152542E6D61696E203D2066756E6374696F6E2870446174612C696E697429207B0D0A20202020644A534F4E203D20275B7B20226964223A20312C2022706172656E744964223A2022222C20226E616D65223A20226E6F64653122207D';
-wwv_flow_imp.g_varchar2_table(3) := '2C7B20226964223A20322C2022706172656E744964223A20312C20226E616D65223A20226E6F64653222207D2C7B20226964223A20332C2022706172656E744964223A20312C20226E616D65223A20226E6F64653322207D5D273B0D0A202020206E6577';
-wwv_flow_imp.g_varchar2_table(4) := '2064332E4F7267436861727428292E636F6E7461696E65722827236F7267636861727427292E64617461284A534F4E2E706172736528644A534F4E29292E72656E64657228293B0D0A7D';
+wwv_flow_imp.g_varchar2_table(2) := '415243485943484152542E6D61696E203D2066756E6374696F6E28636F6E6669672C70446174612C696E697429207B0D0A20202020644A534F4E203D20275B7B20226964223A20312C2022706172656E744964223A2022222C20226E616D65223A20226E';
+wwv_flow_imp.g_varchar2_table(3) := '6F64653122207D2C7B20226964223A20322C2022706172656E744964223A20312C20226E616D65223A20226E6F64653222207D2C7B20226964223A20332C2022706172656E744964223A20312C20226E616D65223A20226E6F64653322207D5D273B0D0A';
+wwv_flow_imp.g_varchar2_table(4) := '202020206E65772064332E4F7267436861727428292E636F6E7461696E65722827236F7267636861727427292E64617461284A534F4E2E706172736528644A534F4E29292E72656E64657228293B0D0A7D';
 end;
 /
 begin
@@ -3729,8 +3964,8 @@ wwv_flow_imp_shared.create_plugin_file(
 ,p_mime_type=>'text/javascript'
 ,p_file_charset=>'utf-8'
 ,p_file_content=>wwv_flow_imp.varchar2_to_blob(wwv_flow_imp.g_varchar2_table)
-,p_created_on=>wwv_flow_imp.dz('20241228141917Z')
-,p_updated_on=>wwv_flow_imp.dz('20241228141917Z')
+,p_created_on=>wwv_flow_imp.dz('20241228172459Z')
+,p_updated_on=>wwv_flow_imp.dz('20241228172459Z')
 ,p_created_by=>'BALDOGI.RICHARD'
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
@@ -6554,21 +6789,22 @@ end;
 /
 begin
 wwv_flow_imp.g_varchar2_table := wwv_flow_imp.empty_varchar2_table;
-wwv_flow_imp.g_varchar2_table(1) := '77696E646F772E48494552415243485943484152543D77696E646F772E48494552415243485943484152547C7C7B7D2C48494552415243485943484152542E6D61696E3D66756E6374696F6E286E2C64297B644A534F4E3D275B7B20226964223A20312C';
-wwv_flow_imp.g_varchar2_table(2) := '2022706172656E744964223A2022222C20226E616D65223A20226E6F64653122207D2C7B20226964223A20322C2022706172656E744964223A20312C20226E616D65223A20226E6F64653222207D2C7B20226964223A20332C2022706172656E74496422';
-wwv_flow_imp.g_varchar2_table(3) := '3A20312C20226E616D65223A20226E6F64653322207D5D272C286E65772064332E4F72674368617274292E636F6E7461696E65722822236F7267636861727422292E64617461284A534F4E2E706172736528644A534F4E29292E72656E64657228297D3B';
+wwv_flow_imp.g_varchar2_table(1) := '77696E646F772E48494552415243485943484152543D77696E646F772E48494552415243485943484152547C7C7B7D2C48494552415243485943484152542E6D61696E3D66756E6374696F6E286E2C642C65297B644A534F4E3D275B7B20226964223A20';
+wwv_flow_imp.g_varchar2_table(2) := '312C2022706172656E744964223A2022222C20226E616D65223A20226E6F64653122207D2C7B20226964223A20322C2022706172656E744964223A20312C20226E616D65223A20226E6F64653222207D2C7B20226964223A20332C2022706172656E7449';
+wwv_flow_imp.g_varchar2_table(3) := '64223A20312C20226E616D65223A20226E6F64653322207D5D272C286E65772064332E4F72674368617274292E636F6E7461696E65722822236F7267636861727422292E64617461284A534F4E2E706172736528644A534F4E29292E72656E6465722829';
+wwv_flow_imp.g_varchar2_table(4) := '7D3B';
 end;
 /
 begin
 wwv_flow_imp_shared.create_plugin_file(
- p_id=>wwv_flow_imp.id(102603100743429466931)
+ p_id=>wwv_flow_imp.id(102661338562143279299)
 ,p_plugin_id=>wwv_flow_imp.id(205145835849788167298)
 ,p_file_name=>'js/script.min.js'
 ,p_mime_type=>'text/javascript'
 ,p_file_charset=>'utf-8'
 ,p_file_content=>wwv_flow_imp.varchar2_to_blob(wwv_flow_imp.g_varchar2_table)
-,p_created_on=>wwv_flow_imp.dz('20241228141917Z')
-,p_updated_on=>wwv_flow_imp.dz('20241228141917Z')
+,p_created_on=>wwv_flow_imp.dz('20241228172459Z')
+,p_updated_on=>wwv_flow_imp.dz('20241228172459Z')
 ,p_created_by=>'BALDOGI.RICHARD'
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
