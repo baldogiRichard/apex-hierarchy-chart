@@ -33,7 +33,7 @@ prompt APPLICATION 223760 - orgchart
 -- Application Export:
 --   Application:     223760
 --   Name:            orgchart
---   Date and Time:   12:47 Sunday December 29, 2024
+--   Date and Time:   19:29 Sunday December 29, 2024
 --   Exported By:     BALDOGI.RICHARD
 --   Flashback:       0
 --   Export Type:     Component Export
@@ -87,6 +87,27 @@ wwv_flow_imp_shared.create_plugin(
 '    end loop;',
 'end splitJSON;',
 '',
+'--get node template column positions and gather them into one common array',
+'function get_col_positions( p_columns in varchar2',
+'                          , p_context in apex_exec.t_context)',
+'return apex_t_varchar2',
+'is',
+'    l_col_pos pls_integer;',
+'    l_table apex_t_varchar2;',
+'',
+'    l_cols apex_application_global.vc_arr2 := apex_string.string_to_table( p_str => p_columns',
+'                                                                         , p_sep => '','');',
+'begin',
+'    ',
+'    for i in 1..l_cols.count loop',
+'        l_col_pos := apex_exec.get_column_position(p_context, l_cols(i));',
+'        apex_string.push( p_table => l_table',
+'                        , p_value => l_cols(i) || '':'' || l_col_pos);',
+'    end loop;',
+'',
+'    return l_table;',
+'end;',
+'',
 '--get hierarchy data',
 'function get_hierarchy_data',
 '   (  p_region_data        in apex_plugin.t_region',
@@ -110,11 +131,10 @@ wwv_flow_imp_shared.create_plugin(
 '    --query variables',
 '    l_id_col_pos                        pls_integer;',
 '    l_parent_id_col_pos                 pls_integer;',
-'    l_node_template_cols_pos            pls_integer;',
 '',
-'    --comments variables',
+'    --hierarchy variables',
 '    l_id_col_val                        varchar2(32767);',
-'    l_parent_col_val                    varchar2(32767);',
+'    l_parent_id_col_val                 varchar2(32767);',
 '    l_node_template_cols_val            varchar2(32767);',
 '',
 '    --JSON output variable',
@@ -124,6 +144,10 @@ wwv_flow_imp_shared.create_plugin(
 '    l_region_record         apex_application_page_regions%rowtype;',
 '    l_ids_arr               apex_t_varchar2;',
 '    l_filters               apex_exec.t_filters;',
+'',
+'    --other variables',
+'    l_node_cols_arr apex_t_varchar2;',
+'    l_custom_col    apex_t_varchar2;',
 '',
 'begin',
 '',
@@ -180,7 +204,9 @@ wwv_flow_imp_shared.create_plugin(
 '        l_id_col_pos                        := apex_exec.get_column_position(l_context, l_id_col);',
 '        l_parent_id_col_pos                 := apex_exec.get_column_position(l_context, l_parent_id_col);        ',
 '',
-'        --Loop through Node Template columns TODO!!!!!',
+'        --Loop through Node Template columns',
+'        l_node_cols_arr := get_col_positions( p_columns => l_node_template_cols',
+'                                            , p_context => l_context);',
 '',
 '        --creating JSON for JS initialization',
 '        apex_json.initialize_clob_output;',
@@ -194,8 +220,27 @@ wwv_flow_imp_shared.create_plugin(
 '',
 '                        apex_json.open_object;',
 '',
-'                            --TODO: apex_exec.get_varchar2',
-'                            --apex_json.write',
+'                            --ID and Parent ID columns',
+'                            l_id_col_val        := apex_exec.get_varchar2(l_context, l_id_col_pos);',
+'                            l_parent_id_col_val := apex_exec.get_varchar2(l_context, l_parent_id_col_pos);',
+'',
+'                            apex_json.write( p_name  => ''id''',
+'                                           , p_value => l_id_col_val);',
+'',
+'                            apex_json.write( p_name  => ''parentId''',
+'                                           , p_value => l_parent_id_col_val);',
+'',
+'                            --Custom Columns',
+'                            for i in 1..l_node_cols_arr.count',
+'                            loop',
+'                                l_custom_col := apex_string.split( p_str => l_node_cols_arr(i)',
+'                                                                 , p_sep => '':'');',
+'',
+'                                l_node_template_cols_val := apex_exec.get_varchar2(l_context, l_custom_col(2));',
+'',
+'                                apex_json.write( p_name  => l_custom_col(1)',
+'                                               , p_value => l_node_template_cols_val);',
+'                            end loop;',
 '',
 '                        apex_json.close_object;',
 '',
@@ -211,6 +256,8 @@ wwv_flow_imp_shared.create_plugin(
 '',
 '    end if;',
 '',
+'    return l_json_text;',
+'',
 'end get_hierarchy_data;',
 '',
 '--get hierarchy data',
@@ -218,6 +265,10 @@ wwv_flow_imp_shared.create_plugin(
 '   (  p_region_config      in apex_plugin.t_region )',
 'return clob',
 'is',
+'',
+'    --region id',
+'    l_region_static_id      p_region_config.static_id%type    := p_region_config.static_id;',
+'    l_region_id             p_region_config.id%type           := p_region_config.id;',
 '',
 '    --attributes',
 '    l_node_template         p_region_config.attribute_04%type := p_region_config.attribute_04;',
@@ -233,6 +284,9 @@ wwv_flow_imp_shared.create_plugin(
 '',
 '        apex_json.open_object(p_name => ''configData'');',
 '',
+'            apex_json.write( p_name  => ''regionId''',
+'                           , p_value => coalesce(l_region_static_id, l_region_id));',
+'',
 '            apex_json.write( p_name  => ''nodeTemplate''',
 '                           , p_value => l_node_template);',
 '',
@@ -247,6 +301,8 @@ wwv_flow_imp_shared.create_plugin(
 '        l_config_json := apex_json.get_clob_output;',
 '',
 '    apex_json.free_output;',
+'',
+'    return l_config_json;',
 '',
 'end get_config_data;',
 '',
@@ -336,12 +392,12 @@ wwv_flow_imp_shared.create_plugin(
 ,p_ajax_function=>'ajax'
 ,p_standard_attributes=>'SOURCE_LOCATION:AJAX_ITEMS_TO_SUBMIT:ORDER_BY:ESCAPE_OUTPUT:INIT_JAVASCRIPT_CODE:COLUMNS:HEADING_ALIGNMENT:VALUE_ALIGNMENT:VALUE_CSS:VALUE_ATTRIBUTE'
 ,p_substitute_attributes=>true
-,p_version_scn=>15596514475803
+,p_version_scn=>15596555809948
 ,p_subscribe_plugin_settings=>true
 ,p_version_identifier=>'1.0'
 ,p_about_url=>'https://github.com/baldogiRichard/apex-hierarchy-chart'
 ,p_files_version=>18
-,p_updated_on=>wwv_flow_imp.dz('20241229124700Z')
+,p_updated_on=>wwv_flow_imp.dz('20241229192747Z')
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
 wwv_flow_imp_shared.create_plugin_attr_group(
