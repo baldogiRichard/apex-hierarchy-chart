@@ -33,7 +33,7 @@ prompt APPLICATION 223760 - orgchart
 -- Application Export:
 --   Application:     223760
 --   Name:            orgchart
---   Date and Time:   21:13 Saturday December 28, 2024
+--   Date and Time:   12:47 Sunday December 29, 2024
 --   Exported By:     BALDOGI.RICHARD
 --   Flashback:       0
 --   Export Type:     Component Export
@@ -87,32 +87,25 @@ wwv_flow_imp_shared.create_plugin(
 '    end loop;',
 'end splitJSON;',
 '',
-'--render',
-'procedure render',
-'  ( p_plugin in            apex_plugin.t_plugin,',
-'    p_region in            apex_plugin.t_region,',
-'    p_param  in            apex_plugin.t_region_render_param,',
-'    p_result in out nocopy apex_plugin.t_region_render_result',
-'  )',
-'as',
+'--get hierarchy data',
+'function get_hierarchy_data',
+'   (  p_region_data        in apex_plugin.t_region',
+'   ,  p_filter             in varchar2 default null',
+'   )',
+'return clob',
+'is',
 '    --region and ajax id',
-'    l_region_static_id      p_region.static_id%type    := p_region.static_id;',
-'    l_region_id             p_region.id%type           := p_region.id;',
-'    l_ajax_id               p_region.static_id%type    := apex_plugin.get_ajax_identifier;',
-'',
-'    --init js',
-'    l_init_js               varchar2(32767)            := nvl(apex_plugin_util.replace_substitutions(p_region.init_javascript_code), ''undefined'');',
+'    l_region_static_id      p_region_data.static_id%type    := p_region_data.static_id;',
+'    l_region_id             p_region_data.id%type           := p_region_data.id;',
+'    l_ajax_id               p_region_data.static_id%type    := apex_plugin.get_ajax_identifier;',
 '',
 '    --region source',
 '    l_context               apex_exec.t_context;',
 '',
 '    --attributes',
-'    l_id_col                p_region.attribute_01%type := p_region.attribute_01;',
-'    l_parent_id_col         p_region.attribute_02%type := p_region.attribute_02;',
-'    l_node_template_cols    p_region.attribute_03%type := p_region.attribute_03;',
-'    l_node_template         p_region.attribute_04%type := p_region.attribute_04;',
-'    l_node_button_template  p_region.attribute_05%type := p_region.attribute_05;',
-'    l_partial_lode          p_region.attribute_06%type := p_region.attribute_06;',
+'    l_id_col                p_region_data.attribute_01%type := p_region_data.attribute_01;',
+'    l_parent_id_col         p_region_data.attribute_02%type := p_region_data.attribute_02;',
+'    l_node_template_cols    p_region_data.attribute_03%type := p_region_data.attribute_03;',
 '',
 '    --query variables',
 '    l_id_col_pos                        pls_integer;',
@@ -124,21 +117,15 @@ wwv_flow_imp_shared.create_plugin(
 '    l_parent_col_val                    varchar2(32767);',
 '    l_node_template_cols_val            varchar2(32767);',
 '',
-'    --other variables',
-'    l_json_text             clob := ''{}'';',
+'    --JSON output variable',
+'    l_json_text                         clob;',
+'',
+'    --region source',
 '    l_region_record         apex_application_page_regions%rowtype;',
-'    l_js_varname            constant varchar2(10)   := sys.dbms_random.string(''a'',10);',
+'    l_ids_arr               apex_t_varchar2;',
+'    l_filters               apex_exec.t_filters;',
 '',
 'begin',
-'',
-'    --debug',
-'    if apex_application.g_debug',
-'    then',
-'        apex_plugin_util.debug_region',
-'          ( p_plugin => p_plugin',
-'          , p_region => p_region',
-'          );',
-'    end if;',
 '',
 '    --get region data',
 '    select aapr.*',
@@ -149,6 +136,17 @@ wwv_flow_imp_shared.create_plugin(
 '    --converting region source into a JSON structure',
 '    if l_region_record.location is not null then',
 '      ',
+'        if p_filter is not null then',
+'',
+'            apex_exec.add_filter(',
+'                p_filters     => l_filters,',
+'                p_filter_type => apex_exec.c_filter_in,',
+'                p_column_name => l_parent_id_col,',
+'                p_values      => l_ids_arr',
+'            );            ',
+'',
+'        end if;',
+'',
 '        l_context := apex_exec.open_query_context(',
 '              p_location                => l_region_record.location_code',
 '            --',
@@ -203,24 +201,98 @@ wwv_flow_imp_shared.create_plugin(
 '',
 '                    end loop;',
 '',
-'                l_json_text := apex_json.get_clob_output;',
-'',
 '                apex_json.close_array;',
 '',
 '            apex_json.close_object;',
+'',
+'        l_json_text := apex_json.get_clob_output;',
 '',
 '        apex_json.free_output;',
 '',
 '    end if;',
 '',
+'end get_hierarchy_data;',
+'',
+'--get hierarchy data',
+'function get_config_data',
+'   (  p_region_config      in apex_plugin.t_region )',
+'return clob',
+'is',
+'',
+'    --attributes',
+'    l_node_template         p_region_config.attribute_04%type := p_region_config.attribute_04;',
+'    l_node_button_template  p_region_config.attribute_05%type := p_region_config.attribute_05;',
+'    l_partial_load          p_region_config.attribute_06%type := p_region_config.attribute_06;',
+'',
+'    --JSON output',
+'    l_config_json clob;',
+'',
+'begin',
+'',
+'    apex_json.initialize_clob_output;',
+'',
+'        apex_json.open_object(p_name => ''configData'');',
+'',
+'            apex_json.write( p_name  => ''nodeTemplate''',
+'                           , p_value => l_node_template);',
+'',
+'            apex_json.write( p_name  => ''nodeButtonTemplate''',
+'                           , p_value => l_node_button_template);',
+'',
+'            apex_json.write( p_name  => ''partialLoad''',
+'                           , p_value => l_partial_load);                           ',
+'',
+'        apex_json.close_object;',
+'',
+'        l_config_json := apex_json.get_clob_output;',
+'',
+'    apex_json.free_output;',
+'',
+'end get_config_data;',
+'',
+'--render',
+'procedure render',
+'  ( p_plugin in            apex_plugin.t_plugin,',
+'    p_region in            apex_plugin.t_region,',
+'    p_param  in            apex_plugin.t_region_render_param,',
+'    p_result in out nocopy apex_plugin.t_region_render_result',
+'  )',
+'as',
+'    --init js',
+'    l_init_js               varchar2(32767)         := nvl(apex_plugin_util.replace_substitutions(p_region.init_javascript_code), ''undefined'');',
+'',
+'    --other variables',
+'    l_json_text             clob := ''{}'';',
+'    l_js_varname            constant varchar2(10)   := sys.dbms_random.string(''a'',10);',
+'',
+'    --JSON variables',
+'    l_json_data             clob;',
+'    l_json_config           clob;',
+'',
+'begin',
+'',
+'    --debug',
+'    if apex_application.g_debug',
+'    then',
+'        apex_plugin_util.debug_region',
+'          ( p_plugin => p_plugin',
+'          , p_region => p_region',
+'          );',
+'    end if;',
+'',
+'    --create hierarchy JSON',
+'    l_json_data := get_hierarchy_data( p_region_data => p_region);',
+'',
+'    --create config JSON',
+'    l_json_config := get_config_data( p_region_config => p_region);',
+'',
 '    --split JSON',
-'    splitJSON(p_json     => l_json_text,',
-'              p_varname  => l_js_varname,',
-'              p_splitter => 5000);',
+'    splitJSON( p_json     => l_json_text',
+'             , p_varname  => l_js_varname',
+'             , p_splitter => 5000);',
 '',
 '    -- Adding librarires manually due to a reference error which is caused by charset="utf-8" attribute is not set in the script tag.',
 '    -- Source: https://stackoverflow.com/questions/21381097/d3-is-not-defined-referenceerror',
-'',
 '    apex_javascript.add_library( p_name         => ''d3.v7''',
 '                               , p_directory    => p_plugin.file_prefix || ''js/''',
 '                               , p_attributes   => ''charset="utf-8"'');',
@@ -238,7 +310,7 @@ wwv_flow_imp_shared.create_plugin(
 '                               , p_attributes   => ''charset="utf-8"'');                                                              ',
 '',
 '    --Add onload code',
-'    apex_javascript.add_onload_code(p_code => ''HIERARCHYCHART.main(null,null,null);'');',
+'    apex_javascript.add_onload_code(p_code => ''HIERARCHYCHART.initialize('' || l_json_config || '','' || l_json_data || '','' || l_init_js || '');'');',
 '',
 'end render;',
 '',
@@ -264,12 +336,12 @@ wwv_flow_imp_shared.create_plugin(
 ,p_ajax_function=>'ajax'
 ,p_standard_attributes=>'SOURCE_LOCATION:AJAX_ITEMS_TO_SUBMIT:ORDER_BY:ESCAPE_OUTPUT:INIT_JAVASCRIPT_CODE:COLUMNS:HEADING_ALIGNMENT:VALUE_ALIGNMENT:VALUE_CSS:VALUE_ATTRIBUTE'
 ,p_substitute_attributes=>true
-,p_version_scn=>15596412786257
+,p_version_scn=>15596514475803
 ,p_subscribe_plugin_settings=>true
 ,p_version_identifier=>'1.0'
 ,p_about_url=>'https://github.com/baldogiRichard/apex-hierarchy-chart'
-,p_files_version=>16
-,p_updated_on=>wwv_flow_imp.dz('20241228211333Z')
+,p_files_version=>18
+,p_updated_on=>wwv_flow_imp.dz('20241229124700Z')
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
 wwv_flow_imp_shared.create_plugin_attr_group(
@@ -3951,9 +4023,9 @@ end;
 begin
 wwv_flow_imp.g_varchar2_table := wwv_flow_imp.empty_varchar2_table;
 wwv_flow_imp.g_varchar2_table(1) := '2F2A20676C6F62616C7320617065782C24202A2F0D0A77696E646F772E4849455241524348594348415254203D2077696E646F772E4849455241524348594348415254207C7C207B7D3B0D0A0D0A2F2F45786563757465207363726970740D0A48494552';
-wwv_flow_imp.g_varchar2_table(2) := '415243485943484152542E6D61696E203D2066756E6374696F6E28636F6E6669672C70446174612C696E697429207B0D0A20202020644A534F4E203D20275B7B20226964223A20312C2022706172656E744964223A2022222C20226E616D65223A20226E';
-wwv_flow_imp.g_varchar2_table(3) := '6F64653122207D2C7B20226964223A20322C2022706172656E744964223A20312C20226E616D65223A20226E6F64653222207D2C7B20226964223A20332C2022706172656E744964223A20312C20226E616D65223A20226E6F64653322207D5D273B0D0A';
-wwv_flow_imp.g_varchar2_table(4) := '202020206E65772064332E4F7267436861727428292E636F6E7461696E65722827236F7267636861727427292E64617461284A534F4E2E706172736528644A534F4E29292E72656E64657228293B0D0A7D';
+wwv_flow_imp.g_varchar2_table(2) := '415243485943484152542E696E697469616C697A65203D2066756E6374696F6E28636F6E6669672C70446174612C696E697429207B0D0A20202020644A534F4E203D20275B7B20226964223A20312C2022706172656E744964223A2022222C20226E616D';
+wwv_flow_imp.g_varchar2_table(3) := '65223A20226E6F64653122207D2C7B20226964223A20322C2022706172656E744964223A20312C20226E616D65223A20226E6F64653222207D2C7B20226964223A20332C2022706172656E744964223A20312C20226E616D65223A20226E6F6465332220';
+wwv_flow_imp.g_varchar2_table(4) := '7D5D273B0D0A202020206E65772064332E4F7267436861727428292E636F6E7461696E65722827236F7267636861727427292E64617461284A534F4E2E706172736528644A534F4E29292E72656E64657228293B0D0A7D';
 end;
 /
 begin
@@ -3964,8 +4036,8 @@ wwv_flow_imp_shared.create_plugin_file(
 ,p_mime_type=>'text/javascript'
 ,p_file_charset=>'utf-8'
 ,p_file_content=>wwv_flow_imp.varchar2_to_blob(wwv_flow_imp.g_varchar2_table)
-,p_created_on=>wwv_flow_imp.dz('20241228172459Z')
-,p_updated_on=>wwv_flow_imp.dz('20241228172459Z')
+,p_created_on=>wwv_flow_imp.dz('20241229115537Z')
+,p_updated_on=>wwv_flow_imp.dz('20241229115537Z')
 ,p_created_by=>'BALDOGI.RICHARD'
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
@@ -6789,22 +6861,22 @@ end;
 /
 begin
 wwv_flow_imp.g_varchar2_table := wwv_flow_imp.empty_varchar2_table;
-wwv_flow_imp.g_varchar2_table(1) := '77696E646F772E48494552415243485943484152543D77696E646F772E48494552415243485943484152547C7C7B7D2C48494552415243485943484152542E6D61696E3D66756E6374696F6E286E2C642C65297B644A534F4E3D275B7B20226964223A20';
-wwv_flow_imp.g_varchar2_table(2) := '312C2022706172656E744964223A2022222C20226E616D65223A20226E6F64653122207D2C7B20226964223A20322C2022706172656E744964223A20312C20226E616D65223A20226E6F64653222207D2C7B20226964223A20332C2022706172656E7449';
-wwv_flow_imp.g_varchar2_table(3) := '64223A20312C20226E616D65223A20226E6F64653322207D5D272C286E65772064332E4F72674368617274292E636F6E7461696E65722822236F7267636861727422292E64617461284A534F4E2E706172736528644A534F4E29292E72656E6465722829';
-wwv_flow_imp.g_varchar2_table(4) := '7D3B';
+wwv_flow_imp.g_varchar2_table(1) := '77696E646F772E48494552415243485943484152543D77696E646F772E48494552415243485943484152547C7C7B7D2C48494552415243485943484152542E696E697469616C697A653D66756E6374696F6E286E2C642C65297B644A534F4E3D275B7B20';
+wwv_flow_imp.g_varchar2_table(2) := '226964223A20312C2022706172656E744964223A2022222C20226E616D65223A20226E6F64653122207D2C7B20226964223A20322C2022706172656E744964223A20312C20226E616D65223A20226E6F64653222207D2C7B20226964223A20332C202270';
+wwv_flow_imp.g_varchar2_table(3) := '6172656E744964223A20312C20226E616D65223A20226E6F64653322207D5D272C286E65772064332E4F72674368617274292E636F6E7461696E65722822236F7267636861727422292E64617461284A534F4E2E706172736528644A534F4E29292E7265';
+wwv_flow_imp.g_varchar2_table(4) := '6E64657228297D3B';
 end;
 /
 begin
 wwv_flow_imp_shared.create_plugin_file(
- p_id=>wwv_flow_imp.id(102661338562143279299)
+ p_id=>wwv_flow_imp.id(102873833089132857094)
 ,p_plugin_id=>wwv_flow_imp.id(205145835849788167298)
 ,p_file_name=>'js/script.min.js'
 ,p_mime_type=>'text/javascript'
 ,p_file_charset=>'utf-8'
 ,p_file_content=>wwv_flow_imp.varchar2_to_blob(wwv_flow_imp.g_varchar2_table)
-,p_created_on=>wwv_flow_imp.dz('20241228172459Z')
-,p_updated_on=>wwv_flow_imp.dz('20241228172459Z')
+,p_created_on=>wwv_flow_imp.dz('20241229115537Z')
+,p_updated_on=>wwv_flow_imp.dz('20241229115537Z')
 ,p_created_by=>'BALDOGI.RICHARD'
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
