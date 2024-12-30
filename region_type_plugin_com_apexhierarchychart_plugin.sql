@@ -33,7 +33,7 @@ prompt APPLICATION 223760 - orgchart
 -- Application Export:
 --   Application:     223760
 --   Name:            orgchart
---   Date and Time:   19:29 Sunday December 29, 2024
+--   Date and Time:   12:19 Monday December 30, 2024
 --   Exported By:     BALDOGI.RICHARD
 --   Flashback:       0
 --   Export Type:     Component Export
@@ -124,13 +124,16 @@ wwv_flow_imp_shared.create_plugin(
 '    l_context               apex_exec.t_context;',
 '',
 '    --attributes',
-'    l_id_col                p_region_data.attribute_01%type := p_region_data.attribute_01;',
-'    l_parent_id_col         p_region_data.attribute_02%type := p_region_data.attribute_02;',
-'    l_node_template_cols    p_region_data.attribute_03%type := p_region_data.attribute_03;',
+'    l_id_col                p_region_data.attribute_01%type   := p_region_data.attribute_01;',
+'    l_parent_id_col         p_region_data.attribute_02%type   := p_region_data.attribute_02;',
+'    l_node_template_cols    p_region_data.attribute_03%type   := p_region_data.attribute_03;',
+'    l_partial_load          p_region_data.attribute_06%type   := p_region_data.attribute_06;',
+'    l_node_level_cols       p_region_data.attribute_07%type   := p_region_data.attribute_07;',
 '',
 '    --query variables',
 '    l_id_col_pos                        pls_integer;',
 '    l_parent_id_col_pos                 pls_integer;',
+'    l_node_level_col_pos                pls_integer;',
 '',
 '    --hierarchy variables',
 '    l_id_col_val                        varchar2(32767);',
@@ -146,8 +149,9 @@ wwv_flow_imp_shared.create_plugin(
 '    l_filters               apex_exec.t_filters;',
 '',
 '    --other variables',
-'    l_node_cols_arr apex_t_varchar2;',
-'    l_custom_col    apex_t_varchar2;',
+'    l_node_cols_arr     apex_t_varchar2;',
+'    l_node_level_arr    apex_t_varchar2;',
+'    l_custom_col        apex_t_varchar2;',
 '',
 'begin',
 '',
@@ -160,6 +164,7 @@ wwv_flow_imp_shared.create_plugin(
 '    --converting region source into a JSON structure',
 '    if l_region_record.location is not null then',
 '      ',
+'        --It''s value can come from the AJAX request if Partial Load is enabled',
 '        if p_filter is not null then',
 '',
 '            apex_exec.add_filter(',
@@ -167,6 +172,24 @@ wwv_flow_imp_shared.create_plugin(
 '                p_filter_type => apex_exec.c_filter_in,',
 '                p_column_name => l_parent_id_col,',
 '                p_values      => l_ids_arr',
+'            );            ',
+'',
+'        end if;',
+'',
+'        --If Partial Load is enabled then only fetch the root and it''s descendants',
+'        if l_partial_load = ''Y'' and p_filter is null then',
+'',
+'            apex_string.push( p_table => l_node_level_arr',
+'                            , p_value => 0);',
+'',
+'            apex_string.push( p_table => l_node_level_arr',
+'                            , p_value => 1);',
+'',
+'            apex_exec.add_filter(',
+'                p_filters     => l_filters,',
+'                p_filter_type => apex_exec.c_filter_in,',
+'                p_column_name => l_node_level_cols,',
+'                p_values      => l_node_level_arr',
 '            );            ',
 '',
 '        end if;',
@@ -211,44 +234,40 @@ wwv_flow_imp_shared.create_plugin(
 '        --creating JSON for JS initialization',
 '        apex_json.initialize_clob_output;',
 '',
-'            apex_json.open_object(p_name => ''nodeData'');',
+'            apex_json.open_array;',
 '',
-'                apex_json.open_array;',
+'                while apex_exec.next_row(l_context) ',
+'                loop',
 '',
-'                    while apex_exec.next_row(l_context) ',
-'                    loop',
+'                    apex_json.open_object;',
 '',
-'                        apex_json.open_object;',
+'                        --ID and Parent ID columns',
+'                        l_id_col_val        := apex_exec.get_varchar2(l_context, l_id_col_pos);',
+'                        l_parent_id_col_val := apex_exec.get_varchar2(l_context, l_parent_id_col_pos);',
 '',
-'                            --ID and Parent ID columns',
-'                            l_id_col_val        := apex_exec.get_varchar2(l_context, l_id_col_pos);',
-'                            l_parent_id_col_val := apex_exec.get_varchar2(l_context, l_parent_id_col_pos);',
+'                        apex_json.write( p_name  => ''id''',
+'                                       , p_value => l_id_col_val);',
 '',
-'                            apex_json.write( p_name  => ''id''',
-'                                           , p_value => l_id_col_val);',
+'                        apex_json.write( p_name  => ''parentId''',
+'                                       , p_value => l_parent_id_col_val);',
 '',
-'                            apex_json.write( p_name  => ''parentId''',
-'                                           , p_value => l_parent_id_col_val);',
+'                        --Custom Columns',
+'                        for i in 1..l_node_cols_arr.count',
+'                        loop',
+'                            l_custom_col := apex_string.split( p_str => l_node_cols_arr(i)',
+'                                                             , p_sep => '':'');',
 '',
-'                            --Custom Columns',
-'                            for i in 1..l_node_cols_arr.count',
-'                            loop',
-'                                l_custom_col := apex_string.split( p_str => l_node_cols_arr(i)',
-'                                                                 , p_sep => '':'');',
+'                            l_node_template_cols_val := apex_exec.get_varchar2(l_context, l_custom_col(2));',
 '',
-'                                l_node_template_cols_val := apex_exec.get_varchar2(l_context, l_custom_col(2));',
+'                            apex_json.write( p_name  => l_custom_col(1)',
+'                                           , p_value => l_node_template_cols_val);',
+'                        end loop;',
 '',
-'                                apex_json.write( p_name  => l_custom_col(1)',
-'                                               , p_value => l_node_template_cols_val);',
-'                            end loop;',
+'                    apex_json.close_object;',
 '',
-'                        apex_json.close_object;',
+'                end loop;',
 '',
-'                    end loop;',
-'',
-'                apex_json.close_array;',
-'',
-'            apex_json.close_object;',
+'            apex_json.close_array;',
 '',
 '        l_json_text := apex_json.get_clob_output;',
 '',
@@ -282,7 +301,7 @@ wwv_flow_imp_shared.create_plugin(
 '',
 '    apex_json.initialize_clob_output;',
 '',
-'        apex_json.open_object(p_name => ''configData'');',
+'        apex_json.open_object;',
 '',
 '            apex_json.write( p_name  => ''regionId''',
 '                           , p_value => coalesce(l_region_static_id, l_region_id));',
@@ -392,12 +411,12 @@ wwv_flow_imp_shared.create_plugin(
 ,p_ajax_function=>'ajax'
 ,p_standard_attributes=>'SOURCE_LOCATION:AJAX_ITEMS_TO_SUBMIT:ORDER_BY:ESCAPE_OUTPUT:INIT_JAVASCRIPT_CODE:COLUMNS:HEADING_ALIGNMENT:VALUE_ALIGNMENT:VALUE_CSS:VALUE_ATTRIBUTE'
 ,p_substitute_attributes=>true
-,p_version_scn=>15596555809948
+,p_version_scn=>15596678981016
 ,p_subscribe_plugin_settings=>true
 ,p_version_identifier=>'1.0'
 ,p_about_url=>'https://github.com/baldogiRichard/apex-hierarchy-chart'
 ,p_files_version=>18
-,p_updated_on=>wwv_flow_imp.dz('20241229192747Z')
+,p_updated_on=>wwv_flow_imp.dz('20241230121945Z')
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
 wwv_flow_imp_shared.create_plugin_attr_group(
@@ -526,6 +545,24 @@ wwv_flow_imp_shared.create_plugin_attribute(
 ,p_help_text=>'If the attribute is switched ON, then the content of the table will be loaded partially to the browser. As the user expands the leaf nodes their children will be loaded through an AJAX call.'
 ,p_created_on=>wwv_flow_imp.dz('20241228203743Z')
 ,p_updated_on=>wwv_flow_imp.dz('20241228203743Z')
+,p_created_by=>'BALDOGI.RICHARD'
+,p_updated_by=>'BALDOGI.RICHARD'
+);
+wwv_flow_imp_shared.create_plugin_attribute(
+ p_id=>wwv_flow_imp.id(103266928131991407579)
+,p_plugin_id=>wwv_flow_imp.id(205145835849788167298)
+,p_attribute_scope=>'COMPONENT'
+,p_attribute_sequence=>7
+,p_display_sequence=>70
+,p_static_id=>'node_level_column'
+,p_prompt=>'Node Level Column:'
+,p_attribute_type=>'REGION SOURCE COLUMN'
+,p_is_required=>true
+,p_column_data_types=>'VARCHAR2:NUMBER'
+,p_is_translatable=>false
+,p_attribute_group_id=>wwv_flow_imp.id(102586827655329824407)
+,p_created_on=>wwv_flow_imp.dz('20241230114042Z')
+,p_updated_on=>wwv_flow_imp.dz('20241230114042Z')
 ,p_created_by=>'BALDOGI.RICHARD'
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
