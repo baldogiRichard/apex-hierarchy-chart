@@ -33,7 +33,7 @@ prompt APPLICATION 223760 - orgchart
 -- Application Export:
 --   Application:     223760
 --   Name:            orgchart
---   Date and Time:   13:19 Wednesday January 1, 2025
+--   Date and Time:   14:46 Wednesday January 1, 2025
 --   Exported By:     BALDOGI.RICHARD
 --   Flashback:       0
 --   Export Type:     Component Export
@@ -248,8 +248,9 @@ wwv_flow_imp_shared.create_plugin(
 '                        apex_json.write( p_name  => ''id''',
 '                                       , p_value => l_id_col_val);',
 '',
-'                        apex_json.write( p_name  => ''parentId''',
-'                                       , p_value => l_parent_id_col_val);',
+'                        apex_json.write( p_name         => ''parentId''',
+'                                       , p_value        => coalesce(l_parent_id_col_val,null)',
+'                                       , p_write_null   => true);',
 '',
 '                        --Custom Columns',
 '                        for i in 1..l_node_cols_arr.count',
@@ -362,9 +363,9 @@ wwv_flow_imp_shared.create_plugin(
 '    l_json_config := get_config_data( p_region_config => p_region);',
 '',
 '    --split JSON',
-'    splitJSON( p_json     => l_json_text',
+'    /*splitJSON( p_json     => l_json_text',
 '             , p_varname  => l_js_varname',
-'             , p_splitter => 5000);',
+'             , p_splitter => 5000);*/',
 '',
 '    -- Adding librarires manually due to a reference error which is caused by charset="utf-8" attribute is not set in the script tag.',
 '    -- Source: https://stackoverflow.com/questions/21381097/d3-is-not-defined-referenceerror',
@@ -411,12 +412,12 @@ wwv_flow_imp_shared.create_plugin(
 ,p_ajax_function=>'ajax'
 ,p_standard_attributes=>'SOURCE_LOCATION:AJAX_ITEMS_TO_SUBMIT:ORDER_BY:ESCAPE_OUTPUT:INIT_JAVASCRIPT_CODE:COLUMNS:HEADING_ALIGNMENT:VALUE_ALIGNMENT:VALUE_CSS:VALUE_ATTRIBUTE'
 ,p_substitute_attributes=>true
-,p_version_scn=>15597012879095
+,p_version_scn=>15597022037700
 ,p_subscribe_plugin_settings=>true
 ,p_version_identifier=>'1.0'
 ,p_about_url=>'https://github.com/baldogiRichard/apex-hierarchy-chart'
-,p_files_version=>18
-,p_updated_on=>wwv_flow_imp.dz('20250101131941Z')
+,p_files_version=>20
+,p_updated_on=>wwv_flow_imp.dz('20250101144548Z')
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
 wwv_flow_imp_shared.create_plugin_attr_group(
@@ -449,13 +450,12 @@ wwv_flow_imp_shared.create_plugin_attribute(
 ,p_prompt=>'ID Column:'
 ,p_attribute_type=>'REGION SOURCE COLUMN'
 ,p_is_required=>true
-,p_default_value=>'pocsometebbeaszarapexbemar'
 ,p_column_data_types=>'VARCHAR2:NUMBER:ROWID'
 ,p_is_translatable=>false
 ,p_attribute_group_id=>wwv_flow_imp.id(102586827655329824407)
 ,p_help_text=>'The ID column of the source table which helps to identify a single record in the source.'
 ,p_created_on=>wwv_flow_imp.dz('20241228192923Z')
-,p_updated_on=>wwv_flow_imp.dz('20241231215338Z')
+,p_updated_on=>wwv_flow_imp.dz('20250101133300Z')
 ,p_created_by=>'BALDOGI.RICHARD'
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
@@ -4156,9 +4156,10 @@ end;
 begin
 wwv_flow_imp.g_varchar2_table := wwv_flow_imp.empty_varchar2_table;
 wwv_flow_imp.g_varchar2_table(1) := '2F2A20676C6F62616C7320617065782C24202A2F0D0A77696E646F772E4849455241524348594348415254203D2077696E646F772E4849455241524348594348415254207C7C207B7D3B0D0A0D0A2F2F45786563757465207363726970740D0A48494552';
-wwv_flow_imp.g_varchar2_table(2) := '415243485943484152542E696E697469616C697A65203D2066756E6374696F6E28636F6E6669672C70446174612C696E697429207B0D0A20202020644A534F4E203D20275B7B20226964223A20312C2022706172656E744964223A2022222C20226E616D';
-wwv_flow_imp.g_varchar2_table(3) := '65223A20226E6F64653122207D2C7B20226964223A20322C2022706172656E744964223A20312C20226E616D65223A20226E6F64653222207D2C7B20226964223A20332C2022706172656E744964223A20312C20226E616D65223A20226E6F6465332220';
-wwv_flow_imp.g_varchar2_table(4) := '7D5D273B0D0A202020206E65772064332E4F7267436861727428292E636F6E7461696E65722827236F7267636861727427292E64617461284A534F4E2E706172736528644A534F4E29292E72656E64657228293B0D0A7D';
+wwv_flow_imp.g_varchar2_table(2) := '415243485943484152542E696E697469616C697A65203D2066756E6374696F6E28636F6E6669672C70446174612C696E697429207B0D0A20202020636F6E736F6C652E6C6F6728636F6E666967293B0D0A20202020636F6E736F6C652E6C6F6728704461';
+wwv_flow_imp.g_varchar2_table(3) := '7461293B0D0A20202020636F6E736F6C652E6C6F6728696E6974293B0D0A20202020644A534F4E203D20275B7B20226964223A20312C2022706172656E744964223A2022222C20226E616D65223A20226E6F64653122207D2C7B20226964223A20322C20';
+wwv_flow_imp.g_varchar2_table(4) := '22706172656E744964223A20312C20226E616D65223A20226E6F64653222207D2C7B20226964223A20332C2022706172656E744964223A20312C20226E616D65223A20226E6F64653322207D5D273B0D0A202020206E65772064332E4F72674368617274';
+wwv_flow_imp.g_varchar2_table(5) := '28292E636F6E7461696E65722827236F7267636861727427292E64617461284A534F4E2E706172736528644A534F4E29292E72656E64657228293B0D0A7D';
 end;
 /
 begin
@@ -4169,8 +4170,8 @@ wwv_flow_imp_shared.create_plugin_file(
 ,p_mime_type=>'text/javascript'
 ,p_file_charset=>'utf-8'
 ,p_file_content=>wwv_flow_imp.varchar2_to_blob(wwv_flow_imp.g_varchar2_table)
-,p_created_on=>wwv_flow_imp.dz('20241229115537Z')
-,p_updated_on=>wwv_flow_imp.dz('20241229115537Z')
+,p_created_on=>wwv_flow_imp.dz('20250101132737Z')
+,p_updated_on=>wwv_flow_imp.dz('20250101132737Z')
 ,p_created_by=>'BALDOGI.RICHARD'
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
@@ -6994,22 +6995,22 @@ end;
 /
 begin
 wwv_flow_imp.g_varchar2_table := wwv_flow_imp.empty_varchar2_table;
-wwv_flow_imp.g_varchar2_table(1) := '77696E646F772E48494552415243485943484152543D77696E646F772E48494552415243485943484152547C7C7B7D2C48494552415243485943484152542E696E697469616C697A653D66756E6374696F6E286E2C642C65297B644A534F4E3D275B7B20';
-wwv_flow_imp.g_varchar2_table(2) := '226964223A20312C2022706172656E744964223A2022222C20226E616D65223A20226E6F64653122207D2C7B20226964223A20322C2022706172656E744964223A20312C20226E616D65223A20226E6F64653222207D2C7B20226964223A20332C202270';
-wwv_flow_imp.g_varchar2_table(3) := '6172656E744964223A20312C20226E616D65223A20226E6F64653322207D5D272C286E65772064332E4F72674368617274292E636F6E7461696E65722822236F7267636861727422292E64617461284A534F4E2E706172736528644A534F4E29292E7265';
-wwv_flow_imp.g_varchar2_table(4) := '6E64657228297D3B';
+wwv_flow_imp.g_varchar2_table(1) := '77696E646F772E48494552415243485943484152543D77696E646F772E48494552415243485943484152547C7C7B7D2C48494552415243485943484152542E696E697469616C697A653D66756E6374696F6E286E2C652C6F297B636F6E736F6C652E6C6F';
+wwv_flow_imp.g_varchar2_table(2) := '67286E292C636F6E736F6C652E6C6F672865292C636F6E736F6C652E6C6F67286F292C644A534F4E3D275B7B20226964223A20312C2022706172656E744964223A2022222C20226E616D65223A20226E6F64653122207D2C7B20226964223A20322C2022';
+wwv_flow_imp.g_varchar2_table(3) := '706172656E744964223A20312C20226E616D65223A20226E6F64653222207D2C7B20226964223A20332C2022706172656E744964223A20312C20226E616D65223A20226E6F64653322207D5D272C286E65772064332E4F72674368617274292E636F6E74';
+wwv_flow_imp.g_varchar2_table(4) := '61696E65722822236F7267636861727422292E64617461284A534F4E2E706172736528644A534F4E29292E72656E64657228297D3B';
 end;
 /
 begin
 wwv_flow_imp_shared.create_plugin_file(
- p_id=>wwv_flow_imp.id(102873833089132857094)
+ p_id=>wwv_flow_imp.id(103992021069421329098)
 ,p_plugin_id=>wwv_flow_imp.id(205145835849788167298)
 ,p_file_name=>'js/script.min.js'
 ,p_mime_type=>'text/javascript'
 ,p_file_charset=>'utf-8'
 ,p_file_content=>wwv_flow_imp.varchar2_to_blob(wwv_flow_imp.g_varchar2_table)
-,p_created_on=>wwv_flow_imp.dz('20241229115537Z')
-,p_updated_on=>wwv_flow_imp.dz('20241229115537Z')
+,p_created_on=>wwv_flow_imp.dz('20250101132737Z')
+,p_updated_on=>wwv_flow_imp.dz('20250101132737Z')
 ,p_created_by=>'BALDOGI.RICHARD'
 ,p_updated_by=>'BALDOGI.RICHARD'
 );
