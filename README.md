@@ -17,6 +17,10 @@ In order for this Plug-in to work properly the following attributes must be full
 
 <b>Settings</b>
 
+![image](https://github.com/user-attachments/assets/0b90d9b7-3fe2-47ab-bcfc-65af0671d430)
+
+Partial Data Load: If the attribute is enabled then only a chunk of the source data will be fetched towards the browser. The number of fetched data is depending on the "Last Node Level to be Expanded" attribute.
+
 <b>Column Mapping</b>
 
 <b>HTML Templates</b>
