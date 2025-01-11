@@ -34,4 +34,9 @@ In order for this Plug-in to work properly the following attributes must be full
 
 <b>HTML Templates</b>
 
+![Képernyőkép 2025-01-11 215430](https://github.com/user-attachments/assets/3627bae2-4a11-48f1-bc0f-93d6bd51df41)
+
+![Képernyőkép 2025-01-11 215605](https://github.com/user-attachments/assets/93165f91-1d50-47e2-87ec-5f6663cb1e69)
+
+
 # License MIT
