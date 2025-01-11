@@ -42,7 +42,7 @@ In order for this Plug-in to work properly the following attributes must be full
 
 ![Képernyőkép 2025-01-11 215605](https://github.com/user-attachments/assets/93165f91-1d50-47e2-87ec-5f6663cb1e69)
 
-<p>Node Width/Height: Width and Height of the Node Template.</p>
+<p>Node Width/Height: Width and Height of the Node Template. (No postfix like "px" should be added to the value. Just a custom number.)</p>
 
 <b>${} Notation</b>
 
