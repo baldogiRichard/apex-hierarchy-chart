@@ -1,4 +1,4 @@
-# apex-hierarchy-chart
+# APEX Hierarchy Chart
 This repository contains the files for the APEX Hierarchy Chart Plug-in.
 
 Oracle Application Express - Hierarchy Chart Plugin
