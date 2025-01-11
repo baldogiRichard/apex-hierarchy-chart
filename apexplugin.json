@@ -1,0 +1,35 @@
+{
+    "name" : "Hierarchy Chart",
+    "version" : "1.0",
+    "description" : "This plug-in helps to visualize data in a hierarchical view with flexible capabilities of displaying custom node content and rendering large and complex hierarchies with partial load behaviour.",
+    "keywords" : ["region","plugin","organisation","organisation chart","hierarchy","hierarchy chart"],
+    "homepage" : "https://github.com/baldogiRichard/apex-hierarchy-chart",
+    "bugs" : {
+      "url" : "https://github.com/baldogiRichard/apex-hierarchy-chart/issues",
+      "email" : "baldogi.richard@gmail.com"
+    },
+    "license" : "MIT",
+    "commercial" : "No",
+    "author" : {
+      "name" : "Richard Baldogi",
+      "email" : "baldogi.richard@gmail.com",
+      "url" : "https://www.linkedin.com/in/rb-627543146",
+      "twitter": "@O_APEX_Hungary"
+    },
+    "repository" : {
+      "type" : "git",
+      "url" : "https://github.com/baldogiRichard/apex-hierarchy-chart.git"
+    },
+   "oracle" : {
+      "versions" : ["19.0.0.0","21.0.0.0"],
+      "apex" : {
+        "versions" : ["24.1"],
+        "plugin" : {
+          "internalName" : "COM.APEXHIERARCHYCHART.PLUGIN",
+          "type" : "region",
+          "demo" : "https://apex.oracle.com/pls/apex/r/rmzrt/apex-plugins-by-richard-baldogi/hierarchy-chart",
+          "previewImage" : ""//"https://raw.githubusercontent.com/baldogiRichard/hierarchy-chart/main/enhanceigwtreegrid.gif"
+        }
+      }
+    }
+  }
