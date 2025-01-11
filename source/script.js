@@ -45,6 +45,9 @@ HIERARCHYCHART.initialize = function(config,pData,init) {
                   .nodeHeight((node) => parseInt(config.nodeHeight))
                   .render();
 
+    //Create apex.region interface
+    HIERARCHYCHART.createHierarchyChartRegion(config.regionId,hierarchyChart);
+
 };
 
 //Converting the enquoted HTML string into a template literal
@@ -113,3 +116,13 @@ HIERARCHYCHART.overwriteMethod = function(object, initCode) {
         object[item] = overWrittenFunctions[item];
     });
 };
+
+//Initialize Hierarchy Chart apex.region Interface
+HIERARCHYCHART.createHierarchyChartRegion = function(pRegionId,pChartObject) {
+    apex.region.create( pRegionId, {
+        type: "apex-region-hierarchy-chart",
+        refresh: function() {
+            pChartObject.render();
+        }
+    });
+}
