@@ -51,4 +51,5 @@ In order for this Plug-in to work properly the following attributes must be full
 ![Képernyőkép 2025-01-11 222600](https://github.com/user-attachments/assets/a645aebb-437b-4a53-9ec6-aa21906de4df)
 
 
-# License MIT
+# 
+License MIT
