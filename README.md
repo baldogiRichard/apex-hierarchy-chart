@@ -23,6 +23,8 @@ In order for this Plug-in to work properly the following attributes must be full
 
 <p>Last Node Level to be Expanded: A number which tells on one hand what is the last expanded level on the displayed region but on the hand it tells the defined level + 1 which will be fetched during rendering. So for example if the value is 2 then the last expanded (or displayed) level will be the 2nd level but records till the 3rd level will be fetched towards the user.</p>
 
+![Képernyőkép 2025-01-11 214200](https://github.com/user-attachments/assets/de1fb3d1-82f3-47e1-8b9c-59ea9728dd9a)
+
 <b>Column Mapping</b>
 
 <b>HTML Templates</b>
