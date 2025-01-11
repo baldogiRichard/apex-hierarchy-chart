@@ -36,9 +36,17 @@ In order for this Plug-in to work properly the following attributes must be full
 
 <b>HTML Templates</b>
 
+<p>One template can be defined for the overall look of the given node and another can be defined for the Expand/Collapse button.</p>
+
 ![Képernyőkép 2025-01-11 215430](https://github.com/user-attachments/assets/3627bae2-4a11-48f1-bc0f-93d6bd51df41)
 
 ![Képernyőkép 2025-01-11 215605](https://github.com/user-attachments/assets/93165f91-1d50-47e2-87ec-5f6663cb1e69)
+
+<b>${} Notation</b>
+
+<p>HTML templates are using a ${} notation and are case sensitive. So if the name of the column is defined in the source query in upper cases ${COLUMN_NAME} then the name of the column must be defined with upper case as well in the ${} notation.</p>
+
+![Képernyőkép 2025-01-11 222600](https://github.com/user-attachments/assets/a645aebb-437b-4a53-9ec6-aa21906de4df)
 
 
 # License MIT
