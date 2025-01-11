@@ -29,8 +29,8 @@ In order for this Plug-in to work properly the following attributes must be full
 
 ![Képernyőkép 2025-01-11 214612](https://github.com/user-attachments/assets/f8cbb8d4-9b8b-415f-8051-7eaf5a1a4b58)
 
-<p>Mandatory fields (ID Column, Parent ID Column, Node Level Column) are used to determine the structure of the data.</p>
-<p>Optional fields are a comma delimited (,) list of columns which is usually being used for the Node HTML Template and is meant to be replaced with the ${COLUMN_NAME} substitution notations.</p>
+<p>Mandatory fields (ID Column, Parent ID Column, Node Level Column): Are used to determine the structure of the data.</p>
+<p>Optional fields: Are a comma delimited (,) list of columns which is usually being used for the Node HTML Template and is meant to be replaced with the ${COLUMN_NAME} substitution notations.</p>
 
 <b>HTML Templates</b>
 
