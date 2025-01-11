@@ -7,7 +7,7 @@ This plug-in helps to visualize data in a hierarchical view with flexible capabi
 
 Minimum requirement: Oracle Application Expresss 24.1
 
-This plug-in uses the <a href="[https://github.com/bumbeishvili/org-chart]" rel="nofollow">Bumbeishvili org-chart</a> library.
+This plug-in uses the <a href="https://github.com/bumbeishvili/org-chart" rel="nofollow">Bumbeishvili org-chart</a> library.
 
 # setup
 
