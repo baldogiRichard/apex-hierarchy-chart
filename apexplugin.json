@@ -28,7 +28,7 @@
           "internalName" : "COM.APEXHIERARCHYCHART.PLUGIN",
           "type" : "region",
           "demo" : "https://apex.oracle.com/pls/apex/r/rmzrt/apex-plugins-by-richard-baldogi/hierarchy-chart",
-          "previewImage" : "https://raw.githubusercontent.com/baldogiRichard/hierarchy-chart/main/hierarchychartgif.gif"
+          "previewImage" : "https://raw.githubusercontent.com/baldogiRichard/apex-hierarchy-chart/main/hierarchychartgif.gif"
         }
       }
     }
